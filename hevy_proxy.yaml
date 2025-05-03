@@ -3,32 +3,262 @@ info:
   title: Hevy Proxy
   version: "0.1"
 servers:
-  - url: {YOUR URL}
+  - url: https://f3ef-2a01-799-c95-a500-b747-e88b-5580-3655.ngrok-free.app
 paths:
   /workouts:
     get:
-      operationId: get_recent_workouts
-      summary: Get recent workouts
+      operationId: getRecentWorkouts
+      summary: Retrieve past workouts
       parameters:
         - in: query
           name: page
+          required: false
           schema:
             type: integer
-            default: 1
         - in: query
           name: pageSize
+          required: false
           schema:
             type: integer
-            default: 25
-        - in: query
-          name: since
-          schema:
-            type: string
-            format: date-time
       responses:
         "200":
-          description: list of workouts
+          description: Successfully retrieved workouts
           content:
             application/json:
               schema:
                 type: object
+                properties: {}
+    post:
+      operationId: logWorkout
+      summary: Create a workout in Hevy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogWorkoutBody"
+      responses:
+        "201":
+          description: Workout successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+  /exercise_templates/all:
+    get:
+      operationId: allTemplates
+      summary: Return every cached exercise template title and ID
+      responses:
+        "200":
+          description: Successfully retrieved templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  templates:
+                    type: object
+                    additionalProperties:
+                      type: string
+  /routines:
+    get:
+      operationId: getRoutines
+      summary: Get a paginated list of routines
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: pageSize
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Successfully retrieved routines
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+    post:
+      operationId: createRoutine
+      summary: Create a new routine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoutineBody"
+      responses:
+        "201":
+          description: Routine successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+  /routines/{routine_id}:
+    get:
+      operationId: getRoutineById
+      summary: Get a routine by its Id
+      parameters:
+        - in: path
+          name: routine_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successfully retrieved routine
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+    put:
+      operationId: updateRoutine
+      summary: Update an existing routine
+      parameters:
+        - in: path
+          name: routine_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRoutineBody"
+      responses:
+        "200":
+          description: Routine successfully updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+components:
+  schemas:
+    LogWorkoutBody:
+      type: object
+      required:
+        - workout
+      properties:
+        workout:
+          $ref: "#/components/schemas/WorkoutCreate"
+    WorkoutCreate:
+      type: object
+      required:
+        - title
+        - start_time
+        - end_time
+        - is_private
+        - exercises
+      properties:
+        title:
+          type: string
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        is_private:
+          type: boolean
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExerciseInput"
+    ExerciseInput:
+      type: object
+      required:
+        - title
+        - sets
+      properties:
+        title:
+          type: string
+        notes:
+          type: string
+        sets:
+          type: array
+          items:
+            $ref: "#/components/schemas/SetInput"
+    SetInput:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - normal
+            - warmup
+            - dropset
+            - failure
+        weight_kg:
+          type: number
+        reps:
+          type: integer
+        distance_meters:
+          type: number
+        duration_seconds:
+          type: number
+        rpe:
+          type: number
+        custom_metric:
+          type: number
+    CreateRoutineBody:
+      type: object
+      required:
+        - routine
+      properties:
+        routine:
+          $ref: "#/components/schemas/RoutineInput"
+    UpdateRoutineBody:
+      type: object
+      required:
+        - routine
+      properties:
+        routine:
+          $ref: "#/components/schemas/RoutineInput"
+    RoutineInput:
+      type: object
+      required:
+        - title
+        - exercises
+      properties:
+        title:
+          type: string
+        folder_id:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+        exercises:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoutineExerciseInput"
+    RoutineExerciseInput:
+      type: object
+      required:
+        - exercise_template_id
+        - sets
+      properties:
+        exercise_template_id:
+          type: string
+        superset_id:
+          type: integer
+          nullable: true
+        rest_seconds:
+          type: integer
+        notes:
+          type: string
+        sets:
+          type: array
+          items:
+            $ref: "#/components/schemas/SetInput"

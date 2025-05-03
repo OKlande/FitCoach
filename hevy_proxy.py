@@ -68,7 +68,7 @@ async def all_templates():
     """Return the cached exercise templates under 'templates' key."""
     return {"templates": TEMPLATE_CACHE}
 
-
+# ─── Workout Endpoints ───
 @app.get("/workouts", operation_id="getRecentWorkouts")
 async def get_workouts(
         page: int = 1,
@@ -138,3 +138,77 @@ async def log_workout(request: Request):
         if resp.status_code >= 400:
             raise HTTPException(status_code=resp.status_code, detail=resp.text)
         return resp.json()
+
+# ─── Routine Endpoints ───
+ROUTINES_URL = f"{HEVY_API_URL}/routines"
+
+@app.get("/routines", operation_id="getRoutines")
+async def get_routines(
+    page: int = 1,
+    pageSize: int = 5,
+):
+    """Paginated list of routines (max 10 per page)."""
+    if pageSize < 1:
+        pageSize = 1
+    elif pageSize > 10:
+        pageSize = 10
+
+    params = {"page": page, "pageSize": pageSize}
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(
+            ROUTINES_URL,
+            headers={"api-key": HEVY_API_KEY, "accept": "application/json"},
+            params=params,
+        )
+    if resp.is_error:
+        raise HTTPException(resp.status_code, resp.text)
+    return resp.json()
+
+
+@app.get("/routines/{routine_id}", operation_id="getRoutine")
+async def get_routine(routine_id: str):
+    """Get one routine by its ID."""
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.get(
+            f"{ROUTINES_URL}/{routine_id}",
+            headers={"api-key": HEVY_API_KEY, "accept": "application/json"},
+        )
+    if resp.is_error:
+        raise HTTPException(resp.status_code, resp.text)
+    return resp.json()
+
+
+@app.post(
+    "/routines",
+    status_code=status.HTTP_201_CREATED,
+    operation_id="createRoutine",
+)
+async def create_routine(request: Request):
+    """Create a new routine in Hevy."""
+    payload = await request.json()
+
+    # (Optional) you can inject template IDs here just like /workouts if you wish
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.post(
+            ROUTINES_URL,
+            json=payload,
+            headers={"api-key": HEVY_API_KEY, "content-type": "application/json"},
+        )
+    if resp.is_error:
+        raise HTTPException(resp.status_code, resp.text)
+    return resp.json()
+
+
+@app.put("/routines/{routine_id}", operation_id="updateRoutine")
+async def update_routine(routine_id: str, request: Request):
+    """Update an existing routine."""
+    payload = await request.json()
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.put(
+            f"{ROUTINES_URL}/{routine_id}",
+            json=payload,
+            headers={"api-key": HEVY_API_KEY, "content-type": "application/json"},
+        )
+    if resp.is_error:
+        raise HTTPException(resp.status_code, resp.text)
+    return resp.json()

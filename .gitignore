@@ -1,0 +1,38 @@
+# Ignore environment files
+.hevy_env
+.ngrok_env
+
+# Ignore node_modules
+node_modules/
+
+# Ignore logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore build output
+dist/
+build/
+
+# Ignore IDE files
+.vscode/
+.idea/
+.DS_Store
+
+# Ignore test coverage
+coverage/
+
+# Ignore environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignore misc files
+*.pem
+*.key
+*.crt
+*.pfx
