@@ -69,6 +69,24 @@ async def all_templates():
     return {"templates": TEMPLATE_CACHE}
 
 # ─── Workout Endpoints ───
+# ─── Routines payload clean‑up ────────────────────────────────
+ALLOWED_SET_FIELDS = {
+    "type", "weight_kg", "reps",
+    "distance_meters", "duration_seconds", "custom_metric"
+}
+
+def _clean_routine_payload(payload: dict):
+    routine = payload.get("routine", {})
+    # Normalize folder_id: 0 → None
+    if routine.get("folder_id") == 0:
+        routine["folder_id"] = None
+
+    for ex in routine.get("exercises", []):
+        for s in ex.get("sets", []):
+            for key in list(s.keys()):
+                if key not in ALLOWED_SET_FIELDS:
+                    del s[key]
+
 @app.get("/workouts", operation_id="getRecentWorkouts")
 async def get_workouts(
         page: int = 1,
@@ -120,6 +138,9 @@ async def log_workout(request: Request):
                 for s in ex["sets"]:
                     if "index" in s:
                         del s["index"]
+
+        # Call the routine payload clean-up function
+        _clean_routine_payload(payload)
 
     except (KeyError, TypeError) as err:
         raise HTTPException(status_code=400, detail=f"Malformed workout JSON: {err}")
@@ -187,7 +208,9 @@ async def create_routine(request: Request):
     """Create a new routine in Hevy."""
     payload = await request.json()
 
-    # (Optional) you can inject template IDs here just like /workouts if you wish
+    # Sanitize the payload
+    _clean_routine_payload(payload)
+
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.post(
             ROUTINES_URL,
@@ -203,6 +226,10 @@ async def create_routine(request: Request):
 async def update_routine(routine_id: str, request: Request):
     """Update an existing routine."""
     payload = await request.json()
+
+    # Sanitize the payload
+    _clean_routine_payload(payload)
+
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.put(
             f"{ROUTINES_URL}/{routine_id}",
